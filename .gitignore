@@ -12,8 +12,6 @@
 /NameSpaceFactory/docs/
 /NameSpaceFactory/lib/openzeppelin-contracts/
 
-# Dotenv file
-/NameSpaceFactory/.env
 
 
 
@@ -43,9 +41,6 @@
 /custom_relayer/npm-debug.log*
 /custom_relayer/yarn-debug.log*
 /custom_relayer/yarn-error.log*
-
-# local env files
-/custom_relayer/.env*.local
 
 # vercel
 /custom_relayer/.vercel
