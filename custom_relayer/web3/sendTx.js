@@ -1,27 +1,49 @@
-import { ethers } from "ethers";
-import { createForwarderInstance } from "./forwarder";
-import { createRecipientInstance } from "./recipient";
-import { createProvider } from "./provider";
+import Web3 from 'web3';
+import forwarderAbi from "../abi/Forwarder.json";
+const deployConfig = require('../web3/deploy.json');
+import nameSpaceAbi from "../abi/NamespaceFactory.json"
 
-export async function sendMessage(message) {
+const createProvider = async () => {
+    if (!window.ethereum) {
+        throw new Error('Please install MetaMask or another Ethereum browser extension.');
+    }
+    const provider = new Web3(window.ethereum);
+    try {
+        // Request account access if needed
+        await window.ethereum.enable();
+    } catch (error) {
+        console.error("User denied account access");
+    }
+    return provider;
+};
+
+const createForwarderInstance = (provider) => {
+    const forwarderAddress = deployConfig.Forwarder;
+    return new provider.eth.Contract(forwarderAbi, forwarderAddress);
+};
+
+const createnameSpaceInstance = (provider) => {
+    const nameSpaceAddress = deployConfig.Forwarder;
+    return new provider.eth.Contract(nameSpaceAbi, nameSpaceAddress);
+};
+
+const sendMessage = async (message) => {
     if (!message || message.length < 1) throw new Error('Name cannot be empty');
     if (!window.ethereum) throw new Error('No wallet installed');
 
-    const { ethereum } = window;
-    await ethereum.request({ method: 'eth_requestAccounts' });
-    const userProvider = new ethers.providers.Web3Provider(window.ethereum);
-    const provider = createProvider();
-    const signer = userProvider.getSigner();
-    const recipient = createRecipientInstance(userProvider);
+    const provider = await createProvider();
+    const accounts = await provider.eth.getAccounts();
+    const signer = accounts[0];
+    const nameSpace = createnameSpaceInstance(provider);
 
-    return await sendMetaTx(recipient, provider, signer, message);
-}
+    return await sendMetaTx(nameSpace, provider, signer, message);
+};
 
-async function sendMetaTx(recipient, provider, signer, message) {
+const sendMetaTx = async (nameSpace, provider, signer, message) => {
     const forwarder = createForwarderInstance(provider);
-    const from = await signer.getAddress();
-    const data = recipient.interface.encodeFunctionData('addNewMessage', [message]);
-    const to = recipient.address;
+    const from = signer;
+    const data = nameSpace.methods.deployNamespace(message).encodeABI();
+    const to = nameSpace.options.address;
     const request = await signMetaTxRequest(signer, forwarder, { to, from, data });
     const response = await fetch('http://localhost:4000/relayTransaction', {
         method: 'POST',
@@ -30,29 +52,32 @@ async function sendMetaTx(recipient, provider, signer, message) {
         },
         body: JSON.stringify(request)
     });
-    const responseData = await response.json();
-    return responseData;
-}
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+};
 
-export async function signMetaTxRequest(signer, forwarder, input) {
+const signMetaTxRequest = async (signer, forwarder, input) => {
     const request = await buildRequest(forwarder, input);
     const toSign = await buildTypedData(forwarder, request);
     const signature = await signTypedData(signer, input.from, toSign);
     return { signature, request };
-}
+};
 
-async function buildRequest(forwarder, input) {
-    const nonce = await forwarder.getNonce(input.from).then(nonce => nonce.toString());
+const buildRequest = async (forwarder, input) => {
+    const nonce = await forwarder.methods.getNonce(input.from).call();
     return { value: 0, gas: 1e6, nonce, ...input };
-}
+};
 
-async function buildTypedData(forwarder, request) {
-    const chainId = await forwarder.provider.getNetwork().then(network => network.chainId);
-    const typeData = getMetaTxTypeData(chainId, forwarder.address);
+const buildTypedData = async (forwarder, request) => {
+    const chainId = await forwarder.currentProvider.chainId;
+    const typeData = getMetaTxTypeData(chainId, forwarder.options.address);
     return { ...typeData, message: request };
-}
+};
 
-function getMetaTxTypeData(chainId, forwarderAddress) {
+const getMetaTxTypeData = (chainId, forwarderAddress) => {
+    // Setup to use the signedTypedData function from ethereum
     const EIP712Domain = [
         { name: 'name', type: 'string' },
         { name: 'version', type: 'string' },
@@ -81,8 +106,10 @@ function getMetaTxTypeData(chainId, forwarderAddress) {
         },
         primaryType: 'ForwardRequest',
     };
-}
+};
 
-async function signTypedData(signer, from, data) {
+const signTypedData = async (signer, from, data) => {
     return await signer.provider.send('eth_signTypedData_v4', [from, JSON.stringify(data)]);
-}
+};
+
+export { sendMessage };

@@ -3,13 +3,13 @@ import styles from "../style/home.module.css";
 import Web3 from 'web3';
 import ForwarderAbi from "../abi/Forwarder.json";
 import NamespaceFactoryAbi from "../abi/NamespaceFactory.json";
+import { sendMessage } from '../web3/sendTx';
 
 
 
 const User = () => {
 
-  const [relayerAddress, setRelayerAddress] = useState('');
-  const [relayerKey, setRelayerKey] = useState('');
+  const [nameSpace, setRelayerAddress] = useState('');
   const [connectedStatus, setConnectedStatus] = useState(false);
 
   const connectMetamask = async () => {
@@ -72,34 +72,46 @@ const User = () => {
     const web3Instance = new Web3(window.ethereum);
     const fromAccount = window.ethereum.selectedAddress;
 
-    const changesNamespaceSignature = web3Instance.utils.keccak256('changesNamespace(string)').slice(0, 10);
-
-    const forwarderContract = new web3Instance.eth.Contract(ForwarderAbi, process.env.NEXT_PUBLIC_FORWARDER);
-
-    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(changesNamespaceSignature).call();
-
-    if (!isAllowed) {
+    
+    if (!isAllowed('changesNamespace(string)')) {
       const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
 
-      const tx = namespaceFactoryContract.methods.changesNamespace(relayerAddress);
+      const tx = namespaceFactoryContract.methods.changesNamespace(nameSpace);
       const gas = await tx.estimateGas({ from: fromAccount });
       const receipt = await tx.send({ from: fromAccount, gas });
 
       if (receipt.status) {
         alert('Namespace updated successfully.');
+        return;
       } else {
         alert('Failed to update namespace.');
+        return;
       }
     }
 
-
     try {
-      const response = await sendMessage(relayerAddress);
+      const response = await sendMessage(nameSpace);
     } catch (error) {
-      alret(error);
+      alert(error);
     }
     
   };
+
+  const isAllowed = async (functionName) => {
+
+    const web3Instance = new Web3(window.ethereum);
+    
+    const fromAccount = window.ethereum.selectedAddress;
+
+    const functionSignature = web3Instance.utils.keccak256(functionName).slice(0, 10);
+
+    const forwarderContract = new web3Instance.eth.Contract(ForwarderAbi, process.env.NEXT_PUBLIC_FORWARDER);
+
+    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(functionSignature).call();
+
+    return isAllowed;
+
+  }
 
   const handleConfirm = async () => {
     if (!connectedStatus) {
@@ -109,41 +121,30 @@ const User = () => {
 
     const web3Instance = new Web3(window.ethereum);
     const fromAccount = window.ethereum.selectedAddress;
-    const messageHex = web3Instance.utils.toHex(relayerKey);
 
-    const balanceWei = await web3Instance.eth.getBalance(fromAccount);
 
-    const minBalanceWei = web3Instance.utils.toWei('0.01', 'ether');
+    if (!isAllowed('deployNamespace(string)')) {
+      const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
 
-    if (balanceWei < minBalanceWei) {
-      alert('Insufficient ETH balance. Please add more ETH to your account.');
-      return;
+      const tx = namespaceFactoryContract.methods.changesNamespace(nameSpace);
+      const gas = await tx.estimateGas({ from: fromAccount });
+      const receipt = await tx.send({ from: fromAccount, gas });
+
+      if (receipt.status) {
+        alert('Namespace updated successfully.');
+        return;
+      } else {
+        alert('Failed to update namespace.');
+        return;
+      }
     }
 
     try {
-      const response = await fetch('/api/updateConstants.js', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ address: relayerAddress, key: relayerKey }),
-      });
-
-      if (response.ok) {
-        alert('Constants updated successfully.');
-      } else {
-        alert('Failed to update constants.');
-      }
-      // const signature = await window.ethereum.request({
-      //     method: 'personal_sign',
-      //     params: [messageHex, fromAccount],
-      //     from: fromAccount
-      // });
-      // console.log('Signature:', signature);
-      // alert(`Message signed successfully. Signature: ${signature}`);
-    } catch (err) {
-      console.error("An error occurred while signing the message:", err);
+      const response = await sendMessage(nameSpace);
+    } catch (error) {
+      alert(error);
     }
+
   };
 
   return (
@@ -154,7 +155,7 @@ const User = () => {
             id="nameSpace"
             type="text"
             className={styles.input}
-            value={relayerAddress}
+            value={nameSpace}
             onChange={(e) => setRelayerAddress(e.target.value)}
             placeholder="Name Space"
           />

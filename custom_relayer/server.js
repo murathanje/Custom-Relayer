@@ -1,10 +1,16 @@
 const express = require('express');
-const ForwarderAbi = require('./src/abi/Forwarder.json');
+const ForwarderAbi = require('./abi/Forwarder.json');
 const ethers = require('ethers');
 require('dotenv').config();
+const deployConfig = require('./web3/deploy.json'); 
+const cors = require('cors');
 
 const app = express();
+
 app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3000'
+}));
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -41,11 +47,11 @@ app.post('/relayTransaction', async (req, res) => {
 
     const functionSignature = ethers.utils.hexlify(request.data.slice(0, 4));
 
-    const wallet = new ethers.Wallet(process.env.NEXT_PUBLIC_SPONSOR_PRIVATE_KEY);
+    const wallet = new ethers.Wallet(deployConfig.Sponsor_Private_Key);
     const provider = ethers.getDefaultProvider(process.env.NEXT_PUBLIC_ETH_RPC_URL);
     const connectedWallet = wallet.connect(provider);
 
-    const forwarderContract = new ethers.Contract(process.env.NEXT_PUBLIC_FORWARDER, ForwarderAbi, connectedWallet);
+    const forwarderContract = new ethers.Contract(deployConfig.Forwarder, ForwarderAbi, connectedWallet);
 
     const isAllowed = await forwarderContract.isFunctionSignatureAllowed(functionSignature);
 
