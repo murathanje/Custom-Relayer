@@ -6,7 +6,7 @@
 
 ```bash
  git clone https://github.com/murathanje/Custom-Relayer.git
- cd NameSpaceFactory
+ cd Custom-Relayer/NameSpaceFactory
  forge install OpenZeppelin/openzeppelin-contracts 
 ```
  İf you don't have Foundry You can setup in your environment with the following [link](https://book.getfoundry.sh/getting-started/installation): 
