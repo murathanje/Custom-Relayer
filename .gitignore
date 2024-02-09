@@ -1,0 +1,55 @@
+# Compiler files
+/NameSpaceFactory/cache/
+/NameSpaceFactory/out/
+
+# Ignores development broadcast logs
+/NameSpaceFactory/!/broadcast
+/NameSpaceFactory/broadcast/*/31337/
+/NameSpaceFactory/broadcast/**/dry-run/
+
+/NameSpaceFactory/node_modules
+# Docs
+/NameSpaceFactory/docs/
+/NameSpaceFactory/lib/openzeppelin-contracts/
+
+# Dotenv file
+/NameSpaceFactory/.env
+
+
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/custom_relayer/node_modules
+/custom_relayer/.pnp
+/custom_relayer/.pnp.js
+/custom_relayer/.yarn/install-state.gz
+
+# testing
+/custom_relayer/coverage
+
+# next.js
+/custom_relayer/.next/
+/custom_relayer/out/
+
+# production
+/custom_relayer/build
+
+# misc
+/custom_relayer/.DS_Store
+/custom_relayer/*.pem
+
+# debug
+/custom_relayer/npm-debug.log*
+/custom_relayer/yarn-debug.log*
+/custom_relayer/yarn-error.log*
+
+# local env files
+/custom_relayer/.env*.local
+
+# vercel
+/custom_relayer/.vercel
+
+# typescript
+/custom_relayer/*.tsbuildinfo
+/custom_relayer/next-env.d.ts
