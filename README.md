@@ -48,6 +48,7 @@ and paste the addresses of the deployed contracts ``Forwarder.sol`` and ``Namesp
 - Now open a new terminal 
 ```bash
 cd custom_relayer
+npm install
 npm run dev
 ```
 Let's open the demo by running the commands
