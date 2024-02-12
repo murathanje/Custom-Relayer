@@ -20,8 +20,11 @@ contract ForwarderScript is Script {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         
         vm.startBroadcast(deployerPrivateKey);
+
+        address sponsorAddress = 0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
         
-        forwarder = new Forwarder(allowedFunctionSignatures);
+        forwarder = new Forwarder(allowedFunctionSignatures, sponsorAddress);
+
         namespaceFactory = new NamespaceFactory();
         
         vm.stopBroadcast();

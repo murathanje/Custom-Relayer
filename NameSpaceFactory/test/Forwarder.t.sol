@@ -8,17 +8,28 @@ contract ForwarderTest is Test {
     Forwarder public forwarder;
 
     function setUp() public {
-        bytes4 deployNameSpaceSignature = bytes4(keccak256("deployNameSpace()"));
-        bytes4 configureNameSpaceSignature = bytes4(keccak256("configureNameSpace(address)"));
+        bytes4 configureNameSpaceSignature = bytes4(keccak256("configureNameSpace(string)"));
         bytes4[] memory allowedFunctionSignatures = new bytes4[](2);
-        allowedFunctionSignatures[0] = deployNameSpaceSignature;
         allowedFunctionSignatures[1] = configureNameSpaceSignature;
-        forwarder = new Forwarder(allowedFunctionSignatures);
+        address sponsorAddress =  0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
+        forwarder = new Forwarder(allowedFunctionSignatures,sponsorAddress);
     }
     
     function test_GetNonce() public {
         address testAddress = address(this);
         uint256 initialNonce = forwarder.getNonce(testAddress);
-        assertEq(initialNonce,  0, "Initial nonce should be  0");
+        assertEq(initialNonce,   0, "Initial nonce should be   0");
+    }
+
+    function test_AllowedFunction() public {
+        bytes4 exampleFunctionSignature = bytes4(keccak256("deployNameSpace(string)"));
+        bool isAllowed = forwarder.isFunctionSignatureAllowed(exampleFunctionSignature);
+        assertEq(false,  isAllowed, "This function is not allowed");
+    }
+
+    function test_SponsorAddressMatches() public {
+        address expectedSponsorAddress =   0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
+        address actualSponsorAddress = forwarder.sponsorAddress();
+        assertEq(expectedSponsorAddress, actualSponsorAddress, "Sponsor addresses do not match");
     }
 }

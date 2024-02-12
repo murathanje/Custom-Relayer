@@ -1,7 +1,7 @@
 {
   "Sponsor_Private_Key": "a4f4cf68b862abd4bd766a199727c955db517078db52c54b0bbba87373621bfe",
   "Sponsor_address": "0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df",
-  "Forwarder": "0xe652A2E58c549a0C0589499b028d1af8c1f3A49d",
-  "NameSpaceFactory": "0x4731b9A288AfBBc5b95AbeC9f7B7f1FD4dE079D1",
+  "Forwarder": "0x7f1D3b5c5477Ae9fd1c171Dde6C9B7751d6AeC86",
+  "NameSpaceFactory": "0xf95770a25E27927117b9b1f2Fd63b0cc7B94669b",
   "RPC_URL": "https://arb-sepolia.g.alchemy.com/v2/jH1IofjU9KkHD19IqHOZ7wYahz3Ek6mY"
 }

@@ -35,6 +35,7 @@
 - In the ``setUp()`` function in the ``Forwarder.s.sol`` file in the ``/script`` path, add the functions you want users to pay gas fee from the ``bytes4 deployNameSpaceSignature = bytes4(keccak256("deployNameSpace()"));`` section as in the ``deployNameSpace()`` example and include them in the ``allowedFunctionSignatures[0] = deployNameSpaceSignature;`` array.
 - Followed by 
 ```bash
+source .env
 forge script script/Forwarder.s.sol:ForwarderScript --rpc-url $ETH_RPC_URL --private-key $DEPLOYER_PRIVATE_KEY --broadcast
 ```
 and paste the addresses of the deployed contracts ``Forwarder.sol`` and ``NamespaceFactory.sol`` into the ``Forwarder`` and ``NameSpaceFactory`` sections of the ``/custom_relayer/web3/deploy.json`` path.

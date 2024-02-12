@@ -8,6 +8,9 @@ import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 contract Forwarder is EIP712 {
     using ECDSA for bytes32;
 
+    address public sponsorAddress;
+    address private contractCreator;
+
    struct ForwardRequest {
         address from;
         address to;
@@ -22,10 +25,19 @@ contract Forwarder is EIP712 {
     mapping(bytes4 => bool) private _allowedFunctionSignatures;
 
 
-    constructor(bytes4[] memory allowedFunctionSignatures) EIP712("Forwarder", "0.0.1") {
+    constructor(bytes4[] memory allowedFunctionSignatures, address _sponsorAddress) EIP712("Forwarder", "0.0.1") {
+
+        contractCreator = msg.sender;
+        sponsorAddress = _sponsorAddress;
+        
         for (uint256 i =  0; i < allowedFunctionSignatures.length; i++) {
             _allowedFunctionSignatures[allowedFunctionSignatures[i]] = true;
         }
+    }
+
+    function changeSponsorAddress(address newSponsorAddress) public {
+        require(msg.sender == contractCreator, "Only the contract creator can change the sponsor address.");
+        sponsorAddress = newSponsorAddress;
     }
 
     
@@ -46,6 +58,7 @@ contract Forwarder is EIP712 {
 
     function executeDelegate(ForwardRequest calldata request, bytes calldata signature) public payable returns(bool, bytes memory) {
         require(verify(request, signature), "Forwarder: signature does not match request");
+        require(msg.sender == sponsorAddress, "Only sponsor address can execute this function");
         
         bytes4 functionSignature = bytes4(request.data[:4]);
         require(_allowedFunctionSignatures[functionSignature], "Forwarder: function signature not allowed");
