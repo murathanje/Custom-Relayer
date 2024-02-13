@@ -8,7 +8,7 @@ contract ForwarderTest is Test {
     Forwarder public forwarder;
 
     function setUp() public {
-        bytes4 configureNameSpaceSignature = bytes4(keccak256("configureNameSpace(string)"));
+        bytes4 configureNameSpaceSignature = bytes4(keccak256("deployNameSpace()"));
         bytes4[] memory allowedFunctionSignatures = new bytes4[](2);
         allowedFunctionSignatures[1] = configureNameSpaceSignature;
         address sponsorAddress =  0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
@@ -22,9 +22,9 @@ contract ForwarderTest is Test {
     }
 
     function test_AllowedFunction() public {
-        bytes4 exampleFunctionSignature = bytes4(keccak256("deployNameSpace(string)"));
+        bytes4 exampleFunctionSignature = bytes4(keccak256("deployNameSpace()"));
         bool isAllowed = forwarder.isFunctionSignatureAllowed(exampleFunctionSignature);
-        assertEq(false,  isAllowed, "This function is not allowed");
+        assertEq(true,  isAllowed, "This function is not allowed");
     }
 
     function test_SponsorAddressMatches() public {

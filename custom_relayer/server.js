@@ -1,8 +1,8 @@
 const express = require('express');
 const ForwarderAbi = require('./abi/Forwarder.json');
-const ethers = require('ethers');
+const Web3 = require('web3');
 require('dotenv').config();
-const deployConfig = require('./web3/deploy.json'); 
+const deployConfig = require('./web3/deploy.json');
 const cors = require('cors');
 
 const app = express();
@@ -33,11 +33,12 @@ app.post('/relayTransaction', async (req, res) => {
         name: 'Forwarder',
         version: '0.0.1',
         chainId: 421611,
-        verifyingContract: process.env.NEXT_PUBLIC_FORWARDER,
+        verifyingContract: deployConfig.Forwarder,
     };
 
     const { request, signature } = req.body;
-    const verifiedAddress = ethers.utils.verifyTypedData(domain, types, request, signature);
+    const web3 = new Web3(new Web3.providers.HttpProvider(deployConfig.RPC_URL));
+    const verifiedAddress = web3.eth.accounts.recoverTypedData(domain, types, request, signature);
 
     if (request.from !== verifiedAddress) {
         return res.status(400).send({
@@ -45,15 +46,14 @@ app.post('/relayTransaction', async (req, res) => {
         });
     }
 
-    const functionSignature = ethers.utils.hexlify(request.data.slice(0, 4));
+    const functionSignature = web3.utils.hexlify(request.data.slice(0, 4));
 
-    const wallet = new ethers.Wallet(deployConfig.Sponsor_Private_Key);
-    const provider = ethers.getDefaultProvider(process.env.NEXT_PUBLIC_ETH_RPC_URL);
-    const connectedWallet = wallet.connect(provider);
+    const privateKey = deployConfig.Sponsor_Private_Key;
+    const wallet = web3.eth.accounts.privateKeyToAccount(privateKey);
 
-    const forwarderContract = new ethers.Contract(deployConfig.Forwarder, ForwarderAbi, connectedWallet);
+    const forwarderContract = new web3.eth.Contract(ForwarderAbi, deployConfig.Forwarder);
 
-    const isAllowed = await forwarderContract.isFunctionSignatureAllowed(functionSignature);
+    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(functionSignature).call({ from: wallet.address });
 
     if (!isAllowed) {
         return res.status(400).send({
@@ -62,10 +62,10 @@ app.post('/relayTransaction', async (req, res) => {
     }
 
     const gasLimit = (parseInt(request.gas) + 50000).toString();
-    const contractTx = await forwarderContract.executeDelegate(request, signature, { gasLimit });
-    const transactionReceipt = await contractTx.wait();
+    const tx = await forwarderContract.methods.executeDelegate(request, signature).send({ from: wallet.address, gas: gasLimit });
+    const transactionReceipt = await tx.wait();
 
     return res.json(transactionReceipt);
 });
 
-app.listen(4000, () => console.log('listening on port  4000!'));
+app.listen(4000, () => console.log('listening on port  4000!'));

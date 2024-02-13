@@ -11,11 +11,11 @@ contract ForwarderScript is Script {
 
     function setUp() public {
 
-        bytes4 deployNameSpaceSignature = bytes4(keccak256("deployNameSpace()"));
-        bytes4 configureNameSpaceSignature = bytes4(keccak256("configureNameSpace(address)"));
+        bytes4 deployNameSpaceSignature = bytes4(keccak256("deployNamespace"));
+        bytes4 configureCommunityStakeIdSignature = bytes4(keccak256("configureCommunityStakeId"));
         bytes4[] memory allowedFunctionSignatures = new bytes4[](2);
         allowedFunctionSignatures[0] = deployNameSpaceSignature;
-        allowedFunctionSignatures[1] = configureNameSpaceSignature;
+        allowedFunctionSignatures[1] = configureCommunityStakeIdSignature;
         
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         

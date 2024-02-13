@@ -27,17 +27,17 @@ const Admin = () => {
         }
     };
 
-    const switchNetworkToArbitrumSepolia = async () => {
+    const switchNetworkToGoerli = async () => {
         if (window.ethereum) {
             try {
                 await window.ethereum.request({
                     method: 'wallet_addEthereumChain',
                     params: [{
-                        chainId: '0x' + parseInt('421614', 10).toString(16), 
-                        chainName: 'Arbitrum Sepolia',
+                        chainId: '0x' + parseInt('5', 10).toString(16),
+                        chainName: 'Goerli',
                         nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-                        rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
-                        blockExplorerUrls: ['https://explorer.arbitrum.io/#/'],
+                        rpcUrls: ['https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'],
+                        blockExplorerUrls: ['https://goerli.etherscan.io/'],
                     }],
                 });
             } catch (error) {
@@ -53,7 +53,7 @@ const Admin = () => {
             alert('Already connected');
         } else {
             await connectMetamask();
-            await switchNetworkToArbitrumSepolia();
+            await switchNetworkToGoerli();
         }
     };
 

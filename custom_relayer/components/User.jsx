@@ -31,17 +31,17 @@ const User = () => {
     }
   };
 
-  const switchNetworkToArbitrumSepolia = async () => {
+  const switchNetworkToGoerli = async () => {
     if (window.ethereum) {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
           params: [{
-            chainId: '0x' + parseInt('421614', 10).toString(16), // Convert chain ID to hexadecimal
-            chainName: 'Arbitrum Sepolia',
+            chainId: '0x' + parseInt('5', 10).toString(16),
+            chainName: 'Goerli',
             nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
-            blockExplorerUrls: ['https://explorer.arbitrum.io/#/'],
+            rpcUrls: ['https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161'],
+            blockExplorerUrls: ['https://goerli.etherscan.io/'],
           }],
         });
       } catch (error) {
@@ -57,7 +57,7 @@ const User = () => {
       alert('Already connected');
     } else {
       await connectMetamask();
-      await switchNetworkToArbitrumSepolia();
+      await switchNetworkToGoerli();
     }
   };
 
@@ -70,8 +70,8 @@ const User = () => {
     }
 
     const web3Instance = new Web3(window.ethereum);
-    const fromAccount = window.ethereum.selectedAddress;
-
+    const accounts = await web3Instance.eth.getAccounts();
+    const fromAccount = accounts[0];
     
     if (!isAllowed('changesNamespace(string)')) {
       const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
@@ -100,18 +100,13 @@ const User = () => {
   const isAllowed = async (functionName) => {
 
     const web3Instance = new Web3(window.ethereum);
-    
-    const fromAccount = window.ethereum.selectedAddress;
-
-    const functionSignature = web3Instance.utils.keccak256(functionName).slice(0, 10);
-
+    const formattedSignature = web3Instance.utils.keccak256(functionName).slice(0, 10);
     const forwarderContract = new web3Instance.eth.Contract(ForwarderAbi, process.env.NEXT_PUBLIC_FORWARDER);
-
-    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(functionSignature).call();
+    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(formattedSignature).call();
 
     return isAllowed;
+  };
 
-  }
 
   const handleConfirm = async () => {
     if (!connectedStatus) {
@@ -120,13 +115,13 @@ const User = () => {
     }
 
     const web3Instance = new Web3(window.ethereum);
-    const fromAccount = window.ethereum.selectedAddress;
+    const accounts = await web3Instance.eth.getAccounts();
+    const fromAccount = accounts[0];
 
-
-    if (!isAllowed('deployNamespace(string)')) {
+    if (!isAllowed('deployNamespace')) {
       const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
 
-      const tx = namespaceFactoryContract.methods.changesNamespace(nameSpace);
+      const tx = namespaceFactoryContract.methods.deployNamespace(nameSpace);
       const gas = await tx.estimateGas({ from: fromAccount });
       const receipt = await tx.send({ from: fromAccount, gas });
 
@@ -137,12 +132,15 @@ const User = () => {
         alert('Failed to update namespace.');
         return;
       }
-    }
+    }else{
+      
+      try {
+        const response = await sendMessage(nameSpace);
+        console.log(response);
+      } catch (error) {
+        alert(error);
+      }
 
-    try {
-      const response = await sendMessage(nameSpace);
-    } catch (error) {
-      alert(error);
     }
 
   };
