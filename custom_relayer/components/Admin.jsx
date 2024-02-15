@@ -64,7 +64,6 @@ const Admin = () => {
         }
 
         const web3Instance = new Web3(window.ethereum);
-        const fromAccount = window.ethereum.selectedAddress;
 
         const balanceWei = await web3Instance.eth.getBalance(sponsorAddress);
 
@@ -98,7 +97,7 @@ const Admin = () => {
                 console.error('Error:', error);
                 alert('An error occurred while updating the deploy config',error);
             }); sponsorKey;
-
+            
         }
 
     };

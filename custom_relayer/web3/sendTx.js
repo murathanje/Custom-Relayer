@@ -3,30 +3,26 @@ import deployConfig from '../web3/deploy.json';
 import forwarderAbi from '../abi/Forwarder.json';
 import nameSpaceAbi from '../abi/NamespaceFactory.json';
 
-
 async function sendMessage(message) {
     if (!message || message.length < 1) throw new Error('Message cannot be empty');
-
-    if (typeof window.ethereum === 'undefined') {
-        throw new Error('No Ethereum wallet detected. Please install MetaMask or another Ethereum wallet.');
-    }
-
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-
     const provider = new Web3(window.ethereum);
-    const signer = provider.eth.defaultAccount;
+    const accounts = await provider.eth.getAccounts();
+    const signer = accounts[0];
     const recipient = new provider.eth.Contract(nameSpaceAbi, deployConfig.NameSpaceFactory);
 
     return await sendMetaTx(recipient, provider, signer, message);
 }
 
 async function sendMetaTx(recipient, provider, signer, message) {
+    if (!provider.eth.Contract) {
+        throw new Error('Web3 provider does not support Contract creation');
+    }
     const forwarder = new provider.eth.Contract(forwarderAbi, deployConfig.Forwarder);
     const from = await signer;
-    const data = recipient.methods.changesNamespace(message).encodeABI();
+    const data = recipient.methods.deployNamespace(message).encodeABI();
     const to = recipient.options.address;
 
-    const request = await signMetaTxRequest(signer, forwarder, { to, from, data });
+    const request = await signMetaTxRequest(forwarder, { to, from, data });
     const response = await fetch('http://localhost:4000/relayTransaction', {
         method: 'POST',
         headers: {
@@ -39,10 +35,13 @@ async function sendMetaTx(recipient, provider, signer, message) {
     return responseData;
 }
 
-async function signMetaTxRequest(signer, forwarder, input) {
+async function signMetaTxRequest(forwarder, input) {
     const request = await buildRequest(forwarder, input);
     const toSign = await buildTypedData(request);
-    const signature = await signTypedData(signer, input.from, toSign);
+    if (!toSign || !toSign.types) {
+        throw new Error('Failed to build typed data');
+    }
+    const signature = await signTypedData(input.from, toSign);
     return { signature, request };
 }
 
@@ -50,7 +49,7 @@ async function buildRequest(forwarder, input) {
     const nonce = await forwarder.methods.getNonce(input.from).call();
     const request = {
         value: 0,
-        gas: 1e6,
+        gas: 10000000,
         nonce,
         from: input.from,
         to: input.to,
@@ -62,12 +61,13 @@ async function buildRequest(forwarder, input) {
 async function buildTypedData(request) {
     const chainId = 5;
     const typeData = getMetaTxTypeData(chainId, deployConfig.Forwarder);
-    return Object.assign({}, typeData, { message: request });
+    return {
+        ...typeData,
+        message: request
+    };
 }
 
-
 function getMetaTxTypeData(chainId, forwarderAddress) {
-
     const EIP712Domain = [
         { name: 'name', type: 'string' },
         { name: 'version', type: 'string' },
@@ -97,9 +97,26 @@ function getMetaTxTypeData(chainId, forwarderAddress) {
         },
         primaryType: 'ForwardRequest',
     };
-}
-async function signTypedData(signer, from, data) {
-    return await signer.signTypedData([from, JSON.stringify(data)]);
+};
+
+
+async function signTypedData(from, data) {
+    const typedData = {
+        types: data.types,
+        domain: {
+            ...data.domain,
+            chainId: data.domain.chainId,
+        },
+        primaryType: data.primaryType,
+        message: data.message
+    };
+    const stringifiedData = JSON.stringify(typedData, (_, value) => typeof value === 'bigint' ? value.toString() : value);
+    const result = await window.ethereum.request({
+        method: 'eth_signTypedData_v4',
+        params: [from, stringifiedData],
+        from: from
+    });
+    return result;
 }
 
 export { sendMessage };

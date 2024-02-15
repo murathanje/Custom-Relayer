@@ -18,6 +18,7 @@ app.use(function (req, res, next) {
 });
 
 app.post('/relayTransaction', async (req, res) => {
+    alert(req.body);
     const types = {
         ForwardRequest: [
             { name: 'from', type: 'address' },
@@ -32,7 +33,7 @@ app.post('/relayTransaction', async (req, res) => {
     const domain = {
         name: 'Forwarder',
         version: '0.0.1',
-        chainId: 421611,
+        chainId: 5,
         verifyingContract: deployConfig.Forwarder,
     };
 
