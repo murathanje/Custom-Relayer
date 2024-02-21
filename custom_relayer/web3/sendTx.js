@@ -110,13 +110,31 @@ async function signTypedData(from, data) {
         primaryType: data.primaryType,
         message: data.message
     };
-    const stringifiedData = JSON.stringify(typedData, (_, value) => typeof value === 'bigint' ? value.toString() : value);
-    const result = await window.ethereum.request({
-        method: 'eth_signTypedData_v4',
-        params: [from, stringifiedData],
-        from: from
-    });
-    return result;
-}
+    try {
+        function replacer(_, value) {
+            if (typeof value === 'object' && value !== null) {
+                for (const key in value) {
+                    if (Object.hasOwnProperty.call(value, key)) {
+                        value[key] = replacer(_, value[key]);
+                    }
+                }
+            } else if (typeof value === 'bigint') {
+                return value.toString();
+            }
+            return value;
+        }
 
+        const stringifiedData = JSON.stringify(typedData, replacer);
+        console.log('Stringified data:', stringifiedData);
+        const result = await window.ethereum.request({
+            method: 'eth_signTypedData_v4',
+            params: [from, stringifiedData],
+            from: from
+        });
+        return result;
+    } catch (error) {
+        console.error('Error signing typed data:', error);
+        throw error;
+    }
+}
 export { sendMessage };

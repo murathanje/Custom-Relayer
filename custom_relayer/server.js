@@ -1,6 +1,6 @@
 const express = require('express');
 const ForwarderAbi = require('./abi/Forwarder.json');
-const Web3 = require('web3');
+const Web3 = require('web3'); 
 require('dotenv').config();
 const deployConfig = require('./web3/deploy.json');
 const cors = require('cors');
@@ -18,7 +18,6 @@ app.use(function (req, res, next) {
 });
 
 app.post('/relayTransaction', async (req, res) => {
-    alert(req.body);
     const types = {
         ForwardRequest: [
             { name: 'from', type: 'address' },
@@ -38,7 +37,7 @@ app.post('/relayTransaction', async (req, res) => {
     };
 
     const { request, signature } = req.body;
-    const web3 = new Web3(new Web3.providers.HttpProvider(deployConfig.RPC_URL));
+    const web3 = new Web3(deployConfig.RPC_URL);
     const verifiedAddress = web3.eth.accounts.recoverTypedData(domain, types, request, signature);
 
     if (request.from !== verifiedAddress) {
@@ -69,4 +68,4 @@ app.post('/relayTransaction', async (req, res) => {
     return res.json(transactionReceipt);
 });
 
-app.listen(4000, () => console.log('listening on port  4000!'));
+app.listen(4000, () => console.log('listening on port 4000!'));
