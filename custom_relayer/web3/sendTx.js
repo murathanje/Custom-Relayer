@@ -1,56 +1,66 @@
-import Web3 from 'web3';
+import { ethers } from 'ethers';
 import deployConfig from '../web3/deploy.json';
 import forwarderAbi from '../abi/Forwarder.json';
 import nameSpaceAbi from '../abi/NamespaceFactory.json';
 
 async function sendMessage(message) {
     if (!message || message.length < 1) throw new Error('Message cannot be empty');
-    const provider = new Web3(window.ethereum);
-    const accounts = await provider.eth.getAccounts();
-    const signer = accounts[0];
-    const recipient = new provider.eth.Contract(nameSpaceAbi, deployConfig.NameSpaceFactory);
 
-    return await sendMetaTx(recipient, provider, signer, message);
-}
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const recipient = new ethers.Contract(deployConfig.NameSpaceFactory, nameSpaceAbi, signer);
 
-async function sendMetaTx(recipient, provider, signer, message) {
-    if (!provider.eth.Contract) {
-        throw new Error('Web3 provider does not support Contract creation');
+    const accounts = await provider.send('eth_accounts');
+    if (accounts.length === 0) {
+        throw new Error('No Ethereum accounts found. Please connect your wallet.');
     }
-    const forwarder = new provider.eth.Contract(forwarderAbi, deployConfig.Forwarder);
-    const from = await signer;
-    const data = recipient.methods.deployNamespace(message).encodeABI();
-    const to = recipient.options.address;
+    const selectedAddress = accounts[0];
 
-    const request = await signMetaTxRequest(forwarder, { to, from, data });
+    return await sendMetaTx(recipient, signer, message, selectedAddress);
+}
+async function sendMetaTx(recipient, signer, message, selectedAddress) {
+
+    const forwarder = new ethers.Contract(deployConfig.Forwarder, forwarderAbi, signer);
+
+    // let encodedData = ethers.utils.solidityKeccak256(['string'], [message]);
+    // encodedData = encodedData.slice(2);
+
+    const data = recipient.interface.encodeFunctionData('deployNamespace', [message]);
+    // const data = functionSignature + encodedData;
+
+
+    const to = recipient.address;
+
+    const { signature, request } = await signMetaTxRequest(forwarder, { to, from: selectedAddress, data }, signer);
+
     const response = await fetch('http://localhost:4000/relayTransaction', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify({ request, signature }),
     });
 
     const responseData = await response.json();
     return responseData;
 }
 
-async function signMetaTxRequest(forwarder, input) {
+async function signMetaTxRequest(forwarder, input, signer) {
+
     const request = await buildRequest(forwarder, input);
     const toSign = await buildTypedData(request);
-    if (!toSign || !toSign.types) {
-        throw new Error('Failed to build typed data');
-    }
-    const signature = await signTypedData(input.from, toSign);
-    return { signature, request };
+
+    const signature = await signTypedData(signer, toSign);
+    console.log(request + "   " + signature);
+    return { request, signature };
 }
 
 async function buildRequest(forwarder, input) {
-    const nonce = await forwarder.methods.getNonce(input.from).call();
+    const nonce = await forwarder.getNonce(input.from);
     const request = {
         value: 0,
         gas: 10000000,
-        nonce,
+        nonce: nonce.toString(),
         from: input.from,
         to: input.to,
         data: input.data,
@@ -68,6 +78,7 @@ async function buildTypedData(request) {
 }
 
 function getMetaTxTypeData(chainId, forwarderAddress) {
+
     const EIP712Domain = [
         { name: 'name', type: 'string' },
         { name: 'version', type: 'string' },
@@ -97,44 +108,50 @@ function getMetaTxTypeData(chainId, forwarderAddress) {
         },
         primaryType: 'ForwardRequest',
     };
-};
+}
 
-
-async function signTypedData(from, data) {
-    const typedData = {
-        types: data.types,
-        domain: {
-            ...data.domain,
-            chainId: data.domain.chainId,
-        },
-        primaryType: data.primaryType,
-        message: data.message
-    };
+async function signTypedData(signer, data) {
     try {
-        function replacer(_, value) {
-            if (typeof value === 'object' && value !== null) {
-                for (const key in value) {
-                    if (Object.hasOwnProperty.call(value, key)) {
-                        value[key] = replacer(_, value[key]);
-                    }
-                }
-            } else if (typeof value === 'bigint') {
-                return value.toString();
-            }
-            return value;
-        }
+        const stringifiedData = JSON.stringify(data);
+        const signatureHex = await signer.provider.send('eth_signTypedData_v4', [await signer.getAddress(), stringifiedData]);
+        const signature = splitSignature(signatureHex);
 
-        const stringifiedData = JSON.stringify(typedData, replacer);
-        console.log('Stringified data:', stringifiedData);
-        const result = await window.ethereum.request({
-            method: 'eth_signTypedData_v4',
-            params: [from, stringifiedData],
-            from: from
-        });
-        return result;
+        const types = {
+            ForwardRequest: [
+                { name: 'from', type: 'address' },
+                { name: 'to', type: 'address' },
+                { name: 'value', type: 'uint256' },
+                { name: 'gas', type: 'uint256' },
+                { name: 'nonce', type: 'uint256' },
+                { name: 'data', type: 'bytes' },
+            ]
+        };
+
+        const domain = {
+            name: 'Forwarder',
+            version: '0.0.1',
+            chainId: 5,
+            verifyingContract: deployConfig.Forwarder
+        };
+
+        const recoveredAddress = ethers.utils.verifyTypedData(domain, types, data.message, signature);
+
+        console.log("sender: ", await signer.getAddress());
+        console.log("recoveredAddress: ", recoveredAddress);
+
+
+        return signature; 
     } catch (error) {
         console.error('Error signing typed data:', error);
         throw error;
     }
 }
+
+function splitSignature(signature) {
+    const r = signature.slice(0, 66);
+    const s = '0x' + signature.slice(66, 130);
+    const v = '0x' + signature.slice(130, 132);
+    return { r, s, v };
+}
+
 export { sendMessage };
