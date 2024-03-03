@@ -37,7 +37,7 @@ app.post('/relayTransaction', async (req, res) => {
 
     if (typeof request !== 'object') {
         return res.status(400).send({
-            message: 'Request veya signature değerleri geçersiz formatta.'
+            message: 'Request type doesn\'t exist'
         });
     }
 
@@ -51,30 +51,29 @@ app.post('/relayTransaction', async (req, res) => {
 
     const verifiedAddress = ethers.utils.verifyTypedData(domain, types, request, signature)
     console.log(verifiedAddress);
-    if (request.from === verifiedAddress) {
+    console.log(request.from);
+
+    if (request.from.toLowerCase() !== verifiedAddress.toLowerCase()) {
         return res.status(400).send({
             message: 'The Transaction could not get verified.'
         });
     }
 
-    const functionSignature = request.data.slice(0, 8); 
-
-    const privateKey = deployConfig.Sponsor_Private_Key;
-    const wallet = web3.eth.accounts.privateKeyToAccount(privateKey);
+    const connectedWallet = new ethers.Wallet(process.env.NEXT_PUBLIC_SPONSOR_PRIVATE_KEY)
+    const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_ETH_RPC_URL);
 
     const forwarderContract = new web3.eth.Contract(ForwarderAbi, deployConfig.Forwarder);
+    const forwarderContract1 = new ethers.Contract(deployConfig.Forwarder, ForwarderAbi, connectedWallet)
+    const isAllowed = await forwarderContract1.methods.isFunctionSignatureAllowed(functionSignature).call({ from: wallet.address });
 
-    // const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(functionSignature).call({ from: wallet.address });
-
-    // if (!isAllowed) {
-    //     return res.status(400).send({
-    //         message: 'The function signature is not allowed.'
-    //     });
-    // }
+    if (!isAllowed) {
+        return res.status(400).send({
+            message: 'The function signature is not allowed.'
+        });
+    }
 
     const gasLimit = (parseInt(request.gas) + 50000).toString();
-    const tx = await forwarderContract.methods.executeDelegate(request, signatureBytes).send({ from: wallet.address, gas: gasLimit });
-    const transactionReceipt = await tx.wait();
+    const contractTx = await forwarderContract1.executeDelegate(request, signature, { gasLimit }); const transactionReceipt = await contractTx.wait();
 
     return res.json(transactionReceipt);
 });

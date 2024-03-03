@@ -51,7 +51,6 @@ async function signMetaTxRequest(forwarder, input, signer) {
     const toSign = await buildTypedData(request);
 
     const signature = await signTypedData(signer, toSign);
-    console.log(request + "   " + signature);
     return { request, signature };
 }
 
@@ -111,10 +110,10 @@ function getMetaTxTypeData(chainId, forwarderAddress) {
 }
 
 async function signTypedData(signer, data) {
+
     try {
         const stringifiedData = JSON.stringify(data);
-        const signatureHex = await signer.provider.send('eth_signTypedData_v4', [await signer.getAddress(), stringifiedData]);
-        const signature = splitSignature(signatureHex);
+        const result = await signer.provider.send('eth_signTypedData_v4', [await signer.getAddress(), stringifiedData]);
 
         const types = {
             ForwardRequest: [
@@ -125,33 +124,25 @@ async function signTypedData(signer, data) {
                 { name: 'nonce', type: 'uint256' },
                 { name: 'data', type: 'bytes' },
             ]
-        };
+        }
 
         const domain = {
             name: 'Forwarder',
             version: '0.0.1',
             chainId: 5,
             verifyingContract: deployConfig.Forwarder
-        };
+        }
 
-        const recoveredAddress = ethers.utils.verifyTypedData(domain, types, data.message, signature);
+        const recoveredAddress = ethers.utils.verifyTypedData(domain, types, data.message, result)
 
         console.log("sender: ", await signer.getAddress());
         console.log("recoveredAddress: ", recoveredAddress);
 
-
-        return signature; 
+        return result;
     } catch (error) {
         console.error('Error signing typed data:', error);
         throw error;
     }
-}
-
-function splitSignature(signature) {
-    const r = signature.slice(0, 66);
-    const s = '0x' + signature.slice(66, 130);
-    const v = '0x' + signature.slice(130, 132);
-    return { r, s, v };
 }
 
 export { sendMessage };
