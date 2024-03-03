@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-contract NamespaceFactory is ERC2771Context{
-
-    constructor(MinimalForwarder forwarder, string memory uri_)
-        ERC2771Context(address(forwarder))
-    {}
+contract NamespaceFactory{
 
     mapping(address => string) public getNamespace;
 

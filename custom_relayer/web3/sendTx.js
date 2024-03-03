@@ -21,14 +21,8 @@ async function sendMessage(message) {
 async function sendMetaTx(recipient, signer, message, selectedAddress) {
 
     const forwarder = new ethers.Contract(deployConfig.Forwarder, forwarderAbi, signer);
-
-    // let encodedData = ethers.utils.solidityKeccak256(['string'], [message]);
-    // encodedData = encodedData.slice(2);
-
     const data = recipient.interface.encodeFunctionData('deployNamespace', [message]);
-    // const data = functionSignature + encodedData;
-
-
+    
     const to = recipient.address;
 
     const { signature, request } = await signMetaTxRequest(forwarder, { to, from: selectedAddress, data }, signer);

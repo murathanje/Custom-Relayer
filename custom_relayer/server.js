@@ -43,15 +43,7 @@ app.post('/relayTransaction', async (req, res) => {
 
     const web3 = new Web3(deployConfig.RPC_URL);
 
-
-    console.log('Domain:', domain);
-    console.log('Types:', types);
-    console.log('Request:', request);
-
-
     const verifiedAddress = ethers.utils.verifyTypedData(domain, types, request, signature)
-    console.log(verifiedAddress);
-    console.log(request.from);
 
     if (request.from.toLowerCase() !== verifiedAddress.toLowerCase()) {
         return res.status(400).send({
@@ -59,21 +51,22 @@ app.post('/relayTransaction', async (req, res) => {
         });
     }
 
-    const connectedWallet = new ethers.Wallet(process.env.NEXT_PUBLIC_SPONSOR_PRIVATE_KEY)
     const provider = new ethers.providers.JsonRpcProvider(process.env.NEXT_PUBLIC_ETH_RPC_URL);
+    const connectedWallet = new ethers.Wallet(process.env.NEXT_PUBLIC_SPONSOR_PRIVATE_KEY, provider);
+    const forwarderContract = new ethers.Contract(deployConfig.Forwarder, ForwarderAbi, connectedWallet);
+    const functionSignature = request.data.slice(0, 10);
+    const isAllowed = await forwarderContract.isFunctionSignatureAllowed(functionSignature);
+    console.log("Is Allowed ", isAllowed);    
 
-    const forwarderContract = new web3.eth.Contract(ForwarderAbi, deployConfig.Forwarder);
-    const forwarderContract1 = new ethers.Contract(deployConfig.Forwarder, ForwarderAbi, connectedWallet)
-    const isAllowed = await forwarderContract1.methods.isFunctionSignatureAllowed(functionSignature).call({ from: wallet.address });
-
-    if (!isAllowed) {
-        return res.status(400).send({
-            message: 'The function signature is not allowed.'
-        });
-    }
+    // if (!isAllowed) {
+    //     return res.status(400).send({
+    //         message: 'The function signature is not allowed.'
+    //     });
+    // }
 
     const gasLimit = (parseInt(request.gas) + 50000).toString();
-    const contractTx = await forwarderContract1.executeDelegate(request, signature, { gasLimit }); const transactionReceipt = await contractTx.wait();
+    const contractTx = await forwarderContract.executeDelegate(request, signature, { gasLimit }); 
+    const transactionReceipt = await contractTx.wait();
 
     return res.json(transactionReceipt);
 });

@@ -1,7 +1,7 @@
 {
   "Sponsor_Private_Key": "0xa4f4cf68b862abd4bd766a199727c955db517078db52c54b0bbba87373621bfe",
   "Sponsor_address": "0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df",
-  "Forwarder": "0xB7895e32c74Dc5dbDA27b8BbfD6A3A8652254f7A",
-  "NameSpaceFactory": "0xC2F3d8603D6F0B3Ec591b3F6b49973AcF3df1cBe",
+  "Forwarder": "0xCfa0c31E65587D9bD7b6c4EAfffb88aC9178961B",
+  "NameSpaceFactory": "0x57d0868601997e4110D193E8e8e99994b502610D",
   "RPC_URL": "https://rpc.ankr.com/eth_goerli/e1009cf0896ce3aa04d99face4e715177833923a265a8878f5f03fc575eba609"
 }
