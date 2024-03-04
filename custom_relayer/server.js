@@ -58,11 +58,11 @@ app.post('/relayTransaction', async (req, res) => {
     const isAllowed = await forwarderContract.isFunctionSignatureAllowed(functionSignature);
     console.log("Is Allowed ", isAllowed);    
 
-    // if (!isAllowed) {
-    //     return res.status(400).send({
-    //         message: 'The function signature is not allowed.'
-    //     });
-    // }
+    if (!isAllowed) {
+        return res.status(400).send({
+            message: 'The function signature is not allowed.'
+        });
+    }
 
     const gasLimit = (parseInt(request.gas) + 50000).toString();
     const contractTx = await forwarderContract.executeDelegate(request, signature, { gasLimit }); 

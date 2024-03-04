@@ -5,6 +5,7 @@ contract NamespaceFactory{
 
     mapping(address => string) public getNamespace;
 
+
     function deployNamespace(string memory name) public {
         require(bytes(getNamespace[msg.sender]).length ==  0, "Namespace already exists");
         getNamespace[msg.sender] = name;
