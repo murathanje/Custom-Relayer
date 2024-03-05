@@ -20,16 +20,19 @@ contract ForwarderScript is Script {
         
         vm.startBroadcast(deployerPrivateKey);
 
-        // address sponsorAddress = 0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
+        address sponsorAddress = 0x97E7f2B08a14e4C0A8Dca87fbEB1F68b397c91df;
         
-        // forwarder = new Forwarder(allowedFunctionSignatures, sponsorAddress);
+        forwarder = new Forwarder(allowedFunctionSignatures, sponsorAddress);
 
-        namespaceFactory = new NamespaceFactory(0x082614978DC24465C4c2F263626Bd49b31B74edD);
+        address forwarderAddress = address(forwarder);
+
+        namespaceFactory = new NamespaceFactory(forwarderAddress);
         
         vm.stopBroadcast();
     }
 
     function run() public {
+
     }
 }
 
