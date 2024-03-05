@@ -85,7 +85,7 @@ const Admin = () => {
                 },
                 body: JSON.stringify({
                     sponsorAddress: sponsorAddress,
-                    sponsorKey: sponsorKey
+                    sponsorKey: sponsorKey 
                 })
             }).then(response => {
                 if (response.ok) {

@@ -41,8 +41,6 @@ app.post('/relayTransaction', async (req, res) => {
         });
     }
 
-    const web3 = new Web3(deployConfig.RPC_URL);
-
     const verifiedAddress = ethers.utils.verifyTypedData(domain, types, request, signature)
 
     if (request.from.toLowerCase() !== verifiedAddress.toLowerCase()) {
@@ -60,7 +58,7 @@ app.post('/relayTransaction', async (req, res) => {
 
     if (!isAllowed) {
         return res.status(400).send({
-            message: 'The function signature is not allowed.'
+            message: 'The function signature is not allowed to run by sponsor.'
         });
     }
 

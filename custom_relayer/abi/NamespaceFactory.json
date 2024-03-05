@@ -2,6 +2,36 @@
     {
         "inputs": [
             {
+                "internalType": "address",
+                "name": "trustedForwarder",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": true,
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "nameSpace",
+                "type": "string"
+            }
+        ],
+        "name": "NameSpace",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "string",
                 "name": "name",
                 "type": "string"

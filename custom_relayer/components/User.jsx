@@ -64,6 +64,7 @@ const User = () => {
 
 
   const handleConfigure = async () => {
+
     if (!connectedStatus) {
       alert('Please connect to MetaMask first.');
       return;
@@ -73,7 +74,7 @@ const User = () => {
     const accounts = await web3Instance.eth.getAccounts();
     const fromAccount = accounts[0];
     
-    if (!isAllowed('changesNamespace(string)')) {
+    
       const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
 
       const tx = namespaceFactoryContract.methods.changesNamespace(nameSpace);
@@ -87,24 +88,7 @@ const User = () => {
         alert('Failed to update namespace.');
         return;
       }
-    }
-
-    try {
-      const response = await sendMessage(nameSpace);
-    } catch (error) {
-      alert(error);
-    }
     
-  };
-
-  const isAllowed = async (functionName) => {
-
-    const web3Instance = new Web3(window.ethereum);
-    const formattedSignature = web3Instance.utils.keccak256(functionName).slice(0, 10);
-    const forwarderContract = new web3Instance.eth.Contract(ForwarderAbi, process.env.NEXT_PUBLIC_FORWARDER);
-    const isAllowed = await forwarderContract.methods.isFunctionSignatureAllowed(formattedSignature).call();
-
-    return isAllowed;
   };
 
 
@@ -114,34 +98,17 @@ const User = () => {
       return;
     }
 
-    const web3Instance = new Web3(window.ethereum);
-    const accounts = await web3Instance.eth.getAccounts();
-    const fromAccount = accounts[0];
-
-    if (!isAllowed('deployNamespace')) {
-      const namespaceFactoryContract = new web3Instance.eth.Contract(NamespaceFactoryAbi, process.env.NEXT_PUBLIC_NAMESPACE);
-
-      const tx = namespaceFactoryContract.methods.deployNamespace(nameSpace);
-      const gas = await tx.estimateGas({ from: fromAccount });
-      const receipt = await tx.send({ from: fromAccount, gas });
-
-      if (receipt.status) {
-        alert('Namespace updated successfully.');
-        return;
-      } else {
-        alert('Failed to update namespace.');
-        return;
-      }
-    }else{
-      
       try {
         const response = await sendMessage(nameSpace);
-        console.log(response);
+        if (response.status) {
+          alert('Namespace updated successfully.');
+        }else{
+          alert('Failed to update namespace.');
+        }
       } catch (error) {
         alert(error);
       }
 
-    }
 
   };
 

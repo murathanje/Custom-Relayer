@@ -6,16 +6,15 @@ import "../src/Forwarder.sol";
 import "../src/NamespaceFactory.sol";
 
 contract ForwarderScript is Script {
+    
     Forwarder public forwarder;
     NamespaceFactory public namespaceFactory;
 
     function setUp() public {
 
         bytes4 deployNameSpaceSignature = bytes4(keccak256("deployNamespace(string)"));
-        bytes4 configureCommunityStakeIdSignature = bytes4(keccak256("configureCommunityStakeId"));
         bytes4[] memory allowedFunctionSignatures = new bytes4[](2);
         allowedFunctionSignatures[0] = deployNameSpaceSignature;
-        allowedFunctionSignatures[1] = configureCommunityStakeIdSignature;
         
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
         
@@ -25,7 +24,7 @@ contract ForwarderScript is Script {
         
         // forwarder = new Forwarder(allowedFunctionSignatures, sponsorAddress);
 
-        namespaceFactory = new NamespaceFactory();
+        namespaceFactory = new NamespaceFactory(0x082614978DC24465C4c2F263626Bd49b31B74edD);
         
         vm.stopBroadcast();
     }
